@@ -1,0 +1,8 @@
+---
+description:
+use react and typescript;
+this project is made by vite so use "npm run dev" when you start server;
+purpose of this project is refactioring jsp pages to react pages;
+globs:
+alwaysApply: true
+---
