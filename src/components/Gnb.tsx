@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import "./Gnb.css";
 
 interface GnbProps {
@@ -76,23 +77,23 @@ const Gnb: React.FC<GnbProps> = ({
       >
         <ul>
           <li className="logo">
-            <a href="/">산책갈까</a>
+            <Link to="/">산책갈까</Link>
           </li>
 
           {!isSearchOpen && (
             <>
               <li>
-                <a href="/aroundme">내 주변</a>
+                <Link to="/aroundme">내 주변</Link>
               </li>
 
               {isLoggedIn && (
                 <li>
-                  <a href="/mypage">마이페이지</a>
+                  <Link to="/mypage">마이페이지</Link>
                 </li>
               )}
 
               <li>
-                <a href="/moreinfo">더보기</a>
+                <Link to="/moreinfo">더보기</Link>
               </li>
 
               <li>
