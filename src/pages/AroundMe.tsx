@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { getApiUrl } from "../utils/config";
+import LocationModal from "../components/LocationModal";
 import "./AroundMe.css";
 
 interface Place {
@@ -23,6 +25,11 @@ const AroundMe: React.FC = () => {
   const [lastPage, setLastPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [myLocation, setMyLocation] = useState("위치를 가져오는 중...");
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [currentCoords, setCurrentCoords] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
 
   const categories = [
     { key: "", label: "전체" },
@@ -47,9 +54,8 @@ const AroundMe: React.FC = () => {
         page: currentPage.toString(),
       });
 
-      const response = await fetch(
-        `http://localhost:8080/api/places?${params}`
-      );
+      const apiUrl = await getApiUrl(`/api/places?${params}`);
+      const response = await fetch(apiUrl);
 
       if (!response.ok) {
         throw new Error("데이터를 불러오는데 실패했습니다");
@@ -68,21 +74,38 @@ const AroundMe: React.FC = () => {
   }, [selectedCategory, maxDistance, minStar, orderBy, currentPage]);
 
   const handleLocationClick = () => {
+    // 현재 위치 가져오기 시도
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          setMyLocation(
-            `위도: ${latitude.toFixed(4)}, 경도: ${longitude.toFixed(4)}`
-          );
-          // 위치 정보를 받아온 후 데이터 새로고침
-          fetchPlaces();
+          setCurrentCoords({ lat: latitude, lng: longitude });
+          setIsLocationModalOpen(true);
         },
-        () => {
-          setMyLocation("위치를 가져올 수 없습니다");
+        (error) => {
+          console.warn("현재 위치를 가져올 수 없습니다:", error);
+          // 현재 위치를 가져올 수 없어도 모달은 열기 (기본 위치로)
+          setIsLocationModalOpen(true);
         }
       );
+    } else {
+      // Geolocation을 지원하지 않는 경우에도 모달 열기
+      setIsLocationModalOpen(true);
     }
+  };
+
+  // 위치 선택 완료 처리
+  const handleLocationSelect = (location: {
+    lat: number;
+    lng: number;
+    address: string;
+  }) => {
+    setMyLocation(location.address);
+    setCurrentCoords({ lat: location.lat, lng: location.lng });
+
+    // TODO: 선택된 위치를 기준으로 장소 검색 API 호출
+    // 현재는 기존 fetchPlaces를 호출하지만, 나중에 위치 기반 검색으로 변경 가능
+    fetchPlaces();
   };
 
   const handleSearch = () => {
@@ -286,6 +309,14 @@ const AroundMe: React.FC = () => {
           </div>
         </section>
       </div>
+
+      {/* 위치 선택 모달 */}
+      <LocationModal
+        isOpen={isLocationModalOpen}
+        onClose={() => setIsLocationModalOpen(false)}
+        onLocationSelect={handleLocationSelect}
+        initialLocation={currentCoords || undefined}
+      />
     </>
   );
 };

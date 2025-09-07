@@ -1,0 +1,286 @@
+.about {
+  margin-top: 100px;
+  overflow: hidden;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 30px;
+  min-height: 390px;
+  margin-bottom: 50px;
+  position: relative;
+}
+
+.imgSlider > img {
+  width: 490px;
+  height: 350px;
+  object-fit: contain;
+}
+
+.about > * {
+  float: left;
+}
+
+.about > article {
+  margin-left: 20px;
+}
+
+.commentWritingForm {
+  width: 100%;
+  padding-left: 96px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 20px;
+}
+
+.commentWritingForm > textarea {
+  width: 80%;
+  margin: auto;
+  height: 50px;
+}
+
+.reviews {
+  list-style: none;
+  padding: 0;
+}
+
+.reviews > li {
+  font-size: 16px;
+  border-bottom: 1px solid #eee;
+  padding: 10px 0;
+  padding-left: 96px;
+}
+
+.reviews .writer {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.reviews .stars {
+  font-size: 18px;
+}
+
+.reviews .createdDate {
+  font-weight: 100;
+}
+
+.splide {
+  margin-top: 10px;
+}
+
+.splide__slide > img {
+  width: 120px;
+  height: 80px;
+}
+
+.commentWritingForm > select {
+  display: block;
+}
+
+.wishBtn {
+  background-color: #fff;
+  border: 0;
+  cursor: pointer;
+}
+
+.replyBtn {
+  color: #fff;
+  background-color: #ff5f55;
+  border: 0;
+  border-radius: 2px;
+  padding: 3px 5px;
+  cursor: pointer;
+}
+
+.deletePlaceBtn {
+  color: #fff;
+  background-color: #ff5f55;
+  border: 0;
+  border-radius: 2px;
+  padding: 3px 5px;
+  cursor: pointer;
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+}
+
+/* 추가 스타일링 */
+.place-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.about {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.about > * {
+  float: none; /* flexbox 사용으로 float 제거 */
+}
+
+.imgSlider {
+  flex-shrink: 0;
+}
+
+.displayedImg {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.about article {
+  flex: 1;
+  margin-left: 0;
+}
+
+.about article h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.about article p {
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
+.reviewSection {
+  margin-top: 40px;
+}
+
+.commentWritingForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 5px;
+  margin-bottom: 30px;
+}
+
+.commentWritingForm select {
+  width: 120px;
+  padding: 5px;
+}
+
+.commentWritingForm textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  resize: vertical;
+}
+
+.review {
+  padding: 20px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.review:last-child {
+  border-bottom: none;
+}
+
+.review .writer {
+  margin-bottom: 5px;
+}
+
+.review .score {
+  color: #ffc107;
+  margin-bottom: 10px;
+}
+
+.review .content {
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.review .createdDate {
+  color: #666;
+  font-size: 14px;
+}
+
+.imageSlider {
+  position: relative;
+}
+
+.thumbnails {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.thumbnail {
+  width: 120px;
+  height: 80px;
+  object-fit: cover;
+  cursor: pointer;
+  border: 2px solid transparent;
+  border-radius: 4px;
+}
+
+.thumbnail.active {
+  border-color: #007bff;
+}
+
+.wishBtn img {
+  width: 24px;
+  height: 24px;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .place-container {
+    padding: 0 15px;
+  }
+
+  .about {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .imgSlider > img {
+    width: 100%;
+    height: auto;
+    max-width: 400px;
+  }
+
+  .about article h2 {
+    font-size: 20px;
+  }
+
+  .commentWritingForm {
+    padding: 15px;
+    margin-left: 0;
+    padding-left: 15px;
+  }
+
+  .reviews > li {
+    padding-left: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .place-container {
+    padding: 0 10px;
+  }
+
+  .about {
+    gap: 10px;
+  }
+
+  .about article h2 {
+    font-size: 18px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .commentWritingForm {
+    padding: 10px;
+    padding-left: 10px;
+  }
+
+  .reviews > li {
+    padding-left: 10px;
+  }
+}
