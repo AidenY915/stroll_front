@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import "./AroundMe.css";
 
 interface Place {
-  no: number;
-  title: string;
-  guAddress: string;
-  afterGuAddress: string;
-  detailAddress: string;
+  placeNo: number;
+  name: string;
   star: number;
-  distance?: number;
+  distance: number;
+}
+
+interface ApiResponse {
+  places: Place[];
+  lastPage: number;
 }
 
 const AroundMe: React.FC = () => {
@@ -18,6 +20,8 @@ const AroundMe: React.FC = () => {
   const [minStar, setMinStar] = useState(0);
   const [orderBy, setOrderBy] = useState("distance");
   const [currentPage, setCurrentPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
+  const [loading, setLoading] = useState(false);
   const [myLocation, setMyLocation] = useState("위치를 가져오는 중...");
 
   const categories = [
@@ -30,6 +34,39 @@ const AroundMe: React.FC = () => {
     { key: "kindergarden", label: "유치원" },
   ];
 
+  const fetchPlaces = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      // API 호출을 위한 쿼리 파라미터 구성
+      const params = new URLSearchParams({
+        category: selectedCategory,
+        maxDistance: (maxDistance * 100).toString(), // 거리를 미터로 변환
+        minStar: minStar.toString(),
+        orderBy: orderBy,
+        page: currentPage.toString(),
+      });
+
+      const response = await fetch(
+        `http://localhost:8080/api/places?${params}`
+      );
+
+      if (!response.ok) {
+        throw new Error("데이터를 불러오는데 실패했습니다");
+      }
+
+      const data: ApiResponse = await response.json();
+      console.log(data);
+      setPlaces(data.places);
+      setLastPage(data.lastPage);
+    } catch (error) {
+      console.error("API 호출 에러:", error);
+      // 에러 처리 로직 추가 가능
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedCategory, maxDistance, minStar, orderBy, currentPage]);
+
   const handleLocationClick = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -38,9 +75,10 @@ const AroundMe: React.FC = () => {
           setMyLocation(
             `위도: ${latitude.toFixed(4)}, 경도: ${longitude.toFixed(4)}`
           );
-          // 여기에서 실제 주소 변환 로직을 구현할 수 있습니다
+          // 위치 정보를 받아온 후 데이터 새로고침
+          fetchPlaces();
         },
-        (error) => {
+        () => {
           setMyLocation("위치를 가져올 수 없습니다");
         }
       );
@@ -48,15 +86,14 @@ const AroundMe: React.FC = () => {
   };
 
   const handleSearch = () => {
-    // 실제 검색 로직을 구현합니다
-    console.log("검색 조건:", {
-      category: selectedCategory,
-      maxDistance,
-      minStar,
-      orderBy,
-      page: currentPage,
-    });
+    setCurrentPage(1); // 검색 시 첫 페이지로 리셋
+    fetchPlaces();
   };
+
+  // 컴포넌트 마운트 시 및 검색 조건 변경 시 데이터 로드
+  useEffect(() => {
+    fetchPlaces();
+  }, [fetchPlaces]);
 
   return (
     <>
@@ -144,36 +181,109 @@ const AroundMe: React.FC = () => {
           </ul>
 
           <ul className="results">
-            {places.map((place) => (
-              <li key={place.no}>
-                <a href={`/detail/${place.no}`}>
-                  <img
-                    className="placeImg"
-                    src={`/images/${place.no}_1.jpg`}
-                    onError={(e) => {
-                      e.currentTarget.src = "/images/180x240_placeholder.jpg";
-                    }}
-                    alt={place.title}
-                  />
-                  <div>
-                    <p>
-                      <span className="placeName">{place.title}</span>
-                      {place.distance && (
-                        <span className="distance">{place.distance}m</span>
-                      )}
-                    </p>
-                    <p>
-                      {place.guAddress} {place.afterGuAddress}{" "}
-                      {place.detailAddress}
-                    </p>
-                    <p className="star">★ {place.star}</p>
-                  </div>
-                </a>
+            {loading ? (
+              <li style={{ textAlign: "center", padding: "20px" }}>
+                데이터를 불러오는 중...
               </li>
-            ))}
+            ) : places.length === 0 ? (
+              <li style={{ textAlign: "center", padding: "20px" }}>
+                검색 결과가 없습니다.
+              </li>
+            ) : (
+              places.map((place) => (
+                <li key={place.placeNo}>
+                  <a href={`/place/${place.placeNo}`}>
+                    <img
+                      className="placeImg"
+                      src={`/images/${place.placeNo}_1.jpg`}
+                      onError={(e) => {
+                        e.currentTarget.src = "/images/180x240_placeholder.jpg";
+                      }}
+                      alt={place.name}
+                    />
+                    <div>
+                      <p>
+                        <span className="placeName">{place.name}</span>
+                        <span className="distance">{place.distance}m</span>
+                      </p>
+                      <p className="star">★ {place.star}</p>
+                    </div>
+                  </a>
+                </li>
+              ))
+            )}
           </ul>
 
-          <div className="pagingDiv">{/* 페이징 버튼들을 여기에 구현 */}</div>
+          <div className="pagingDiv">
+            {lastPage > 1 && (
+              <>
+                {/* 이전 페이지 버튼 */}
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(1, prev - 1))
+                  }
+                  disabled={currentPage === 1}
+                  style={{
+                    margin: "0 5px",
+                    padding: "8px 12px",
+                    border: "1px solid #ddd",
+                    backgroundColor: currentPage === 1 ? "#f5f5f5" : "#fff",
+                    cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                  }}
+                >
+                  이전
+                </button>
+
+                {/* 페이지 번호 버튼들 */}
+                {Array.from({ length: Math.min(5, lastPage) }, (_, i) => {
+                  const startPage = Math.max(
+                    1,
+                    Math.min(currentPage - 2, lastPage - 4)
+                  );
+                  const pageNum = startPage + i;
+
+                  if (pageNum > lastPage) return null;
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      style={{
+                        margin: "0 2px",
+                        padding: "8px 12px",
+                        border: "1px solid #ddd",
+                        backgroundColor:
+                          currentPage === pageNum ? "#007bff" : "#fff",
+                        color: currentPage === pageNum ? "#fff" : "#000",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+
+                {/* 다음 페이지 버튼 */}
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(lastPage, prev + 1))
+                  }
+                  disabled={currentPage === lastPage}
+                  style={{
+                    margin: "0 5px",
+                    padding: "8px 12px",
+                    border: "1px solid #ddd",
+                    backgroundColor:
+                      currentPage === lastPage ? "#f5f5f5" : "#fff",
+                    cursor:
+                      currentPage === lastPage ? "not-allowed" : "pointer",
+                  }}
+                >
+                  다음
+                </button>
+              </>
+            )}
+          </div>
         </section>
       </div>
     </>
