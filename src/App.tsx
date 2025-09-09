@@ -12,6 +12,7 @@ import MoreInfo from "./pages/MoreInfo";
 import MyPage from "./pages/MyPage";
 import Place from "./pages/Place";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import { isLoggedIn, logout } from "./utils/auth";
 import "./App.css";
 
@@ -70,6 +71,7 @@ function App() {
             <Route path="/place/:placeNo" element={<Place />} />
             <Route path="/moreinfo" element={<MoreInfo />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
             <Route
               path="/mypage"
               element={
