@@ -13,6 +13,7 @@ import MyPage from "./pages/MyPage";
 import Place from "./pages/Place";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import NewPlace from "./pages/NewPlace";
 import { isLoggedIn, logout } from "./utils/auth";
 import "./App.css";
 
@@ -72,6 +73,12 @@ function App() {
             <Route path="/moreinfo" element={<MoreInfo />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route
+              path="/newplace"
+              element={
+                userLoggedIn ? <NewPlace /> : <Navigate to="/login" replace />
+              }
+            />
             <Route
               path="/mypage"
               element={

@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { getApiUrl } from "../utils/config";
+import { isLoggedIn } from "../utils/auth";
 import LocationModal from "../components/LocationModal";
 import "./AroundMe.css";
 
@@ -16,6 +18,7 @@ interface ApiResponse {
 }
 
 const AroundMe: React.FC = () => {
+  const navigate = useNavigate();
   const [places, setPlaces] = useState<Place[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [maxDistance, setMaxDistance] = useState(50);
@@ -30,6 +33,7 @@ const AroundMe: React.FC = () => {
     lat: number;
     lng: number;
   } | null>(null);
+  const [userLoggedIn, setUserLoggedIn] = useState(false);
 
   const categories = [
     { key: "", label: "전체" },
@@ -113,6 +117,33 @@ const AroundMe: React.FC = () => {
     fetchPlaces();
   };
 
+  // 새 장소 등록 버튼 클릭 핸들러
+  const handleNewPlaceClick = () => {
+    if (userLoggedIn) {
+      navigate("/newplace");
+    } else {
+      navigate("/login");
+    }
+  };
+
+  // 컴포넌트 마운트 시 로그인 상태 확인
+  useEffect(() => {
+    const checkLoginStatus = () => {
+      const loggedIn = isLoggedIn();
+      setUserLoggedIn(loggedIn);
+    };
+
+    checkLoginStatus();
+
+    // 스토리지 변경 감지 (다른 탭에서 로그인/로그아웃 시)
+    const handleStorageChange = () => {
+      checkLoginStatus();
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
   // 컴포넌트 마운트 시 및 검색 조건 변경 시 데이터 로드
   useEffect(() => {
     fetchPlaces();
@@ -147,9 +178,9 @@ const AroundMe: React.FC = () => {
           <button
             id="addNewPlaceBtn"
             type="button"
-            onClick={() => (window.location.href = "/newplace")}
+            onClick={handleNewPlaceClick}
           >
-            새 장소 등록
+            {userLoggedIn ? "새 장소" : "로그인"}
           </button>
         </ul>
 
