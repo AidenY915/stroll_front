@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { isLoggedIn } from "../utils/auth";
+import { isLoggedIn, getToken } from "../utils/auth";
 import { getApiUrl } from "../utils/config";
 import "./NewPlace.css";
 
@@ -291,8 +291,15 @@ const NewPlace: React.FC = () => {
       formDataToSend.append("content", formData.content);
       formDataToSend.append("category", formData.category);
 
+      const headers: Record<string, string> = {};
+      const token = getToken();
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
       const response = await fetch(apiUrl, {
         method: "POST",
+        headers,
         body: formDataToSend,
         // FormData 사용 시 Content-Type 헤더를 설정하지 않음 (브라우저가 자동으로 설정)
       });

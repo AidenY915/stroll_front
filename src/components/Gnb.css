@@ -62,16 +62,17 @@
 .gnb > ul > li.search-container {
   width: 50px;
   position: absolute;
-  right: 324px;
-  transition: left 250ms linear;
+  right: 249px; /* 기본값: 로그인 전 3개 메뉴 (83px * 3) */
+  transition: left 250ms linear, right 250ms linear;
+}
+
+/* 로그인 후 4개 메뉴일 때 위치 조정 */
+.gnb.logged-in > ul > li.search-container {
+  right: 332px; /* 4개 메뉴 (83px * 4) */
 }
 
 .gnb.search-open > ul > li.search-container {
   left: 200px;
-}
-
-.gnb > ul > li.search-container:nth-last-child(1) {
-  right: 240px;
 }
 
 .gnb > ul > li.search-container > input {

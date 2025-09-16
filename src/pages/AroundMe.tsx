@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { getApiUrl } from "../utils/config";
 import { isLoggedIn } from "../utils/auth";
 import LocationModal from "../components/LocationModal";
@@ -19,21 +19,41 @@ interface ApiResponse {
 
 const AroundMe: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [places, setPlaces] = useState<Place[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [maxDistance, setMaxDistance] = useState(50);
-  const [minStar, setMinStar] = useState(0);
+  const [selectedCategory, setSelectedCategory] = useState(
+    searchParams.get("category") || ""
+  );
+  const [maxDistance, setMaxDistance] = useState(
+    parseInt(searchParams.get("maxDistance") || "50")
+  );
+  const [minStar, setMinStar] = useState(
+    parseInt(searchParams.get("minStar") || "0")
+  );
   const [orderBy, setOrderBy] = useState("distance");
   const [currentPage, setCurrentPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [keywords, setKeywords] = useState(searchParams.get("keywords") || "");
   const [myLocation, setMyLocation] = useState("위치를 가져오는 중...");
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [currentCoords, setCurrentCoords] = useState<{
     lat: number;
     lng: number;
-  } | null>(null);
+  } | null>(() => {
+    const x = searchParams.get("x");
+    const y = searchParams.get("y");
+    if (x && y) {
+      return { lat: parseFloat(y), lng: parseFloat(x) };
+    }
+    return null;
+  });
   const [userLoggedIn, setUserLoggedIn] = useState(false);
+  const [hasCoordinates, setHasCoordinates] = useState(() => {
+    const x = searchParams.get("x");
+    const y = searchParams.get("y");
+    return !!(x && y);
+  });
 
   const categories = [
     { key: "", label: "전체" },
@@ -49,16 +69,51 @@ const AroundMe: React.FC = () => {
     try {
       setLoading(true);
 
+      // URL에서 현재 파라미터 값들을 가져와서 API 호출에 사용
+      const currentKeywords = searchParams.get("keywords") || "";
+      const currentMaxDistance = parseInt(
+        searchParams.get("maxDistance") || "50"
+      );
+      const currentMinStar = parseInt(searchParams.get("minStar") || "0");
+      const currentCategory = searchParams.get("category") || "";
+      const currentX = searchParams.get("x"); // 경도
+      const currentY = searchParams.get("y"); // 위도
+
       // API 호출을 위한 쿼리 파라미터 구성
       const params = new URLSearchParams({
-        category: selectedCategory,
-        maxDistance: (maxDistance * 100).toString(), // 거리를 미터로 변환
-        minStar: minStar.toString(),
+        category: currentCategory,
+        maxDistance: currentMaxDistance.toString(), // URL과 동일한 값 사용
+        minStar: currentMinStar.toString(),
         orderBy: orderBy,
         page: currentPage.toString(),
       });
 
+      // 좌표가 있는 경우에만 파라미터에 추가
+      if (currentX && currentY) {
+        params.append("x", currentX); // 경도
+        params.append("y", currentY); // 위도
+      }
+
+      // keywords가 있는 경우에만 파라미터에 추가 (띄어쓰기로 구분된 여러 단어 처리)
+      if (currentKeywords.trim()) {
+        params.append("keywords", currentKeywords.trim());
+      }
+
+      // 디버깅을 위한 로그
+      console.log("API 요청 파라미터:", {
+        currentKeywords,
+        currentMaxDistance,
+        currentMinStar,
+        currentCategory,
+        currentX,
+        currentY,
+        orderBy,
+        currentPage,
+        finalParams: params.toString(),
+      });
+
       const apiUrl = await getApiUrl(`/api/places?${params}`);
+      console.log("최종 API URL:", apiUrl);
       const response = await fetch(apiUrl);
 
       if (!response.ok) {
@@ -75,7 +130,7 @@ const AroundMe: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedCategory, maxDistance, minStar, orderBy, currentPage]);
+  }, [selectedCategory, orderBy, currentPage, searchParams]);
 
   const handleLocationClick = () => {
     // 현재 위치 가져오기 시도
@@ -84,6 +139,13 @@ const AroundMe: React.FC = () => {
         (position) => {
           const { latitude, longitude } = position.coords;
           setCurrentCoords({ lat: latitude, lng: longitude });
+
+          // URL 파라미터에 현재 위치 좌표 추가
+          const newSearchParams = new URLSearchParams(searchParams);
+          newSearchParams.set("x", longitude.toString()); // 경도
+          newSearchParams.set("y", latitude.toString()); // 위도
+          setSearchParams(newSearchParams);
+
           setIsLocationModalOpen(true);
         },
         (error) => {
@@ -107,23 +169,66 @@ const AroundMe: React.FC = () => {
     setMyLocation(location.address);
     setCurrentCoords({ lat: location.lat, lng: location.lng });
 
-    // TODO: 선택된 위치를 기준으로 장소 검색 API 호출
-    // 현재는 기존 fetchPlaces를 호출하지만, 나중에 위치 기반 검색으로 변경 가능
-    fetchPlaces();
+    // URL 파라미터에 좌표 추가
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.set("x", location.lng.toString()); // 경도
+    newSearchParams.set("y", location.lat.toString()); // 위도
+    setSearchParams(newSearchParams);
+
+    // URL 업데이트 후 fetchPlaces는 useEffect에 의해 자동으로 호출됨
   };
 
   const handleSearch = () => {
     setCurrentPage(1); // 검색 시 첫 페이지로 리셋
-    fetchPlaces();
+
+    // URL 파라미터 업데이트
+    const newSearchParams = new URLSearchParams(searchParams);
+
+    // keywords 파라미터 설정
+    if (keywords.trim()) {
+      newSearchParams.set("keywords", keywords.trim());
+    } else {
+      newSearchParams.delete("keywords");
+    }
+
+    // 필터 파라미터 설정
+    newSearchParams.set("category", selectedCategory);
+    newSearchParams.set("maxDistance", maxDistance.toString());
+    newSearchParams.set("minStar", minStar.toString());
+
+    setSearchParams(newSearchParams);
+
+    // URL 업데이트 후 fetchPlaces는 useEffect에 의해 자동으로 호출됨
+    // fetchPlaces(); // 이 줄을 제거하여 중복 호출 방지
+  };
+
+  // 카테고리 선택 핸들러
+  const handleCategoryClick = (categoryKey: string) => {
+    setSelectedCategory(categoryKey);
+    setCurrentPage(1); // 카테고리 변경 시 첫 페이지로 리셋
+
+    // URL 파라미터 업데이트
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.set("category", categoryKey);
+    newSearchParams.set("page", "1");
+    setSearchParams(newSearchParams);
+  };
+
+  // 위치 정보 초기화 핸들러
+  const handleClearLocation = () => {
+    setCurrentCoords(null);
+    setMyLocation("위치를 가져오는 중...");
+
+    // URL에서 x, y 파라미터 제거
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.delete("x");
+    newSearchParams.delete("y");
+    setSearchParams(newSearchParams);
   };
 
   // 새 장소 등록 버튼 클릭 핸들러
   const handleNewPlaceClick = () => {
-    if (userLoggedIn) {
-      navigate("/newplace");
-    } else {
-      navigate("/login");
-    }
+    navigate("/newplace");
   };
 
   // 컴포넌트 마운트 시 로그인 상태 확인
@@ -144,6 +249,21 @@ const AroundMe: React.FC = () => {
     return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
+  // URL 파라미터 변경 시 좌표 state 동기화
+  useEffect(() => {
+    const x = searchParams.get("x");
+    const y = searchParams.get("y");
+    const coordsExist = !!(x && y);
+
+    setHasCoordinates(coordsExist);
+
+    if (coordsExist) {
+      setCurrentCoords({ lat: parseFloat(y), lng: parseFloat(x) });
+    } else {
+      setCurrentCoords(null);
+    }
+  }, [searchParams]);
+
   // 컴포넌트 마운트 시 및 검색 조건 변경 시 데이터 로드
   useEffect(() => {
     fetchPlaces();
@@ -159,29 +279,55 @@ const AroundMe: React.FC = () => {
             <button className="locationBtn" onClick={handleLocationClick}>
               내 위치 설정
             </button>
+            {hasCoordinates && (
+              <button
+                className="clearLocationBtn"
+                onClick={handleClearLocation}
+              >
+                위치 초기화
+              </button>
+            )}
           </p>
         </div>
       </header>
 
       <div className="container">
+        {/* 키워드 검색 입력 필드 */}
+        <div className="searchSection">
+          <input
+            type="text"
+            className="searchInput"
+            placeholder="검색어를 입력하세요 (장소 이름, 주소)"
+            value={keywords}
+            onChange={(e) => setKeywords(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === "Enter") {
+                handleSearch();
+              }
+            }}
+          />
+        </div>
+
         <ul className="categoryUl">
           {categories.map((category) => (
             <li
               key={category.key}
               data-category={category.key}
               className={selectedCategory === category.key ? "active" : ""}
-              onClick={() => setSelectedCategory(category.key)}
+              onClick={() => handleCategoryClick(category.key)}
             >
               {category.label}
             </li>
           ))}
-          <button
-            id="addNewPlaceBtn"
-            type="button"
-            onClick={handleNewPlaceClick}
-          >
-            {userLoggedIn ? "새 장소" : "로그인"}
-          </button>
+          {userLoggedIn && (
+            <button
+              id="addNewPlaceBtn"
+              type="button"
+              onClick={handleNewPlaceClick}
+            >
+              새 장소
+            </button>
+          )}
         </ul>
 
         <aside className="sideFilter">
@@ -258,7 +404,9 @@ const AroundMe: React.FC = () => {
                     <div>
                       <p>
                         <span className="placeName">{place.name}</span>
-                        <span className="distance">{place.distance}m</span>
+                        {hasCoordinates && (
+                          <span className="distance">{place.distance}m</span>
+                        )}
                       </p>
                       <p className="star">★ {place.star}</p>
                     </div>

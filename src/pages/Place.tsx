@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { getApiUrl } from "../utils/config";
+import { getAuthHeaders, getUserIdFromToken } from "../utils/auth";
 import "./Place.css";
 
 // 인터페이스 정의
@@ -115,9 +116,7 @@ const Place: React.FC = () => {
       const apiUrl = await getApiUrl(`/api/wish/${placeNo}`);
       const response = await fetch(apiUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: getAuthHeaders(),
       });
 
       if (response.ok) {
@@ -141,9 +140,7 @@ const Place: React.FC = () => {
       const apiUrl = await getApiUrl("/api/review");
       const response = await fetch(apiUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           placeNo: Number(placeNo),
           star: newReview.star,
@@ -177,6 +174,7 @@ const Place: React.FC = () => {
       );
       const response = await fetch(apiUrl, {
         method: "DELETE",
+        headers: getAuthHeaders(),
       });
 
       if (response.ok) {
@@ -201,6 +199,7 @@ const Place: React.FC = () => {
       const apiUrl = await getApiUrl(`/api/place/${placeNo}`);
       const response = await fetch(apiUrl, {
         method: "DELETE",
+        headers: getAuthHeaders(),
       });
 
       if (response.ok) {
@@ -234,7 +233,8 @@ const Place: React.FC = () => {
   }
 
   const place = placeData;
-  const { imgs, currentUserId } = placeData;
+  const { imgs } = placeData;
+  const currentUserId = getUserIdFromToken();
 
   return (
     <div className="place-container">
@@ -291,7 +291,7 @@ const Place: React.FC = () => {
           </p>
           <p>{place.content || "상세 설명이 없습니다."}</p>
 
-          {currentUserId === place.userId && (
+          {currentUserId && currentUserId === place.userId && (
             <button className="deletePlaceBtn" onClick={handlePlaceDelete}>
               장소 삭제
             </button>

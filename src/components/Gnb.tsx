@@ -73,7 +73,7 @@ const Gnb: React.FC<GnbProps> = ({
         id="gnb"
         className={`gnb ${isScrolled ? "scrolled" : ""} ${
           isSearchOpen ? "search-open" : ""
-        }`}
+        } ${isLoggedIn ? "logged-in" : ""}`}
       >
         <ul>
           <li className="logo">

@@ -63,8 +63,22 @@ export const logout = (): void => {
   window.location.href = "/";
 };
 
+// JWT 토큰에서 사용자 ID(sub) 추출
+export const getUserIdFromToken = (): string | null => {
+  const token = getToken();
+  if (!token) return null;
+
+  try {
+    // JWT 토큰의 payload 부분을 디코딩
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return payload.sub || null;
+  } catch (error) {
+    console.error("토큰 파싱 에러:", error);
+    return null;
+  }
+};
+
 // 로그인 상태 확인
 export const isLoggedIn = (): boolean => {
   return getToken() !== null && isTokenValid();
 };
-

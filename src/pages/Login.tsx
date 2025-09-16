@@ -11,8 +11,8 @@ interface LoginForm {
 }
 
 interface LoginResponse {
-  token: string;
-  user: {
+  accessToken: string;
+  user?: {
     userId: string;
     nickname: string;
     email?: string;
@@ -111,9 +111,13 @@ const Login: React.FC = () => {
       const data: LoginResponse = await response.json();
 
       if (response.ok) {
-        // 토큰과 사용자 정보 저장
-        setToken(data.token);
-        setUser(data.user);
+        // accessToken 저장
+        setToken(data.accessToken);
+
+        // 사용자 정보가 있으면 저장
+        if (data.user) {
+          setUser(data.user);
+        }
 
         setMessage({ type: "success", text: "로그인 성공!" });
 
