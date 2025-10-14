@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { setToken, setUser, isLoggedIn } from "../utils/auth";
+import { setToken, isLoggedIn } from "../utils/auth";
 import { getApiUrl } from "../utils/config";
 import "./Login.css";
 
@@ -11,12 +11,7 @@ interface LoginForm {
 }
 
 interface LoginResponse {
-  accessToken: string;
-  user?: {
-    userId: string;
-    nickname: string;
-    email?: string;
-  };
+  token: string;
   message?: string;
 }
 
@@ -111,13 +106,8 @@ const Login: React.FC = () => {
       const data: LoginResponse = await response.json();
 
       if (response.ok) {
-        // accessToken 저장
-        setToken(data.accessToken);
-
-        // 사용자 정보가 있으면 저장
-        if (data.user) {
-          setUser(data.user);
-        }
+        // token 저장
+        setToken(data.token);
 
         setMessage({ type: "success", text: "로그인 성공!" });
 

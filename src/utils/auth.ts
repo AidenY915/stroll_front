@@ -56,6 +56,11 @@ export const getAuthHeaders = (): HeadersInit => {
   };
 };
 
+// 인증 정보 제거 (로그아웃과 비슷하지만 리다이렉션 없음)
+export const clearAuth = (): void => {
+  removeToken();
+};
+
 // 로그아웃
 export const logout = (): void => {
   removeToken();

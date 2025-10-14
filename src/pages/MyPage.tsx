@@ -1,16 +1,53 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  isLoggedIn,
+  getUserIdFromToken,
+  getAuthHeaders,
+  clearAuth,
+} from "../utils/auth";
+import { getApiUrl } from "../utils/config";
 import "./MyPage.css";
+
+// 비동기 이미지 URL 컴포넌트
+const PlaceImage: React.FC<{ placeNo: number; alt: string }> = ({
+  placeNo,
+  alt,
+}) => {
+  const [imageUrl, setImageUrl] = useState("/images/180x240_placeholder.jpg");
+
+  useEffect(() => {
+    getApiUrl(`/api/image/${placeNo}_1.jpg`).then(setImageUrl);
+  }, [placeNo]);
+
+  return (
+    <img
+      className="placeImg"
+      src={imageUrl}
+      onError={(e) => {
+        e.currentTarget.src = "/images/180x240_placeholder.jpg";
+      }}
+      alt={alt}
+    />
+  );
+};
 
 interface Place {
   no: number;
   title: string;
-  address: string;
+  category: string;
+  guAddress: string;
+  afterGuAddress: string;
   detailAddress: string;
   star: number;
   distance?: number;
+  wished: boolean;
 }
 
 interface Review {
+  no: number;
+  userId: string;
+  userNickname: string;
   placeNo: number;
   placeTitle: string;
   content: string;
@@ -18,73 +55,154 @@ interface Review {
   writtenDate: string;
 }
 
+interface WishlistResponse {
+  wishlist: Place[];
+}
+
+interface PlacesResponse {
+  places: Place[];
+}
+
+interface ReviewsResponse {
+  reviews: Review[];
+}
+
 const MyPage: React.FC = () => {
+  const navigate = useNavigate();
   const [activeMenu, setActiveMenu] = useState("wishList");
   const [places, setPlaces] = useState<Place[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // 더미 데이터
-  const wishListData: Place[] = [
-    {
-      no: 1,
-      title: "강아지 카페 멍멍",
-      address: "서울시 강남구",
-      detailAddress: "테헤란로 123",
-      star: 4.5,
-    },
-    {
-      no: 2,
-      title: "반려동물 놀이터",
-      address: "서울시 서초구",
-      detailAddress: "서초대로 456",
-      star: 4.2,
-    },
-  ];
+  // 로그인 확인
+  useEffect(() => {
+    if (!isLoggedIn()) {
+      navigate("/login");
+    }
+  }, [navigate]);
 
-  const myPlacesData: Place[] = [
-    {
-      no: 3,
-      title: "내가 등록한 펜션",
-      address: "경기도 가평군",
-      detailAddress: "가평읍 789",
-      star: 4.8,
-    },
-  ];
+  // 찜 목록 가져오기
+  const fetchWishlist = async () => {
+    const userId = getUserIdFromToken();
+    if (!userId) {
+      setError("로그인이 필요합니다.");
+      return;
+    }
 
-  const reviewsData: Review[] = [
-    {
-      placeNo: 1,
-      placeTitle: "강아지 카페 멍멍",
-      content: "정말 좋은 곳이에요! 강아지들이 너무 귀여워요.",
-      star: 5,
-      writtenDate: "2024-01-15 14:30",
-    },
-    {
-      placeNo: 2,
-      placeTitle: "반려동물 놀이터",
-      content: "넓고 깨끗해서 강아지가 뛰어놀기 좋아요.",
-      star: 4,
-      writtenDate: "2024-01-10 16:45",
-    },
-  ];
+    try {
+      setLoading(true);
+      setError(null);
+      const apiUrl = await getApiUrl(`/api/users/${userId}/wishlist`);
+      const response = await fetch(apiUrl, {
+        headers: getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          throw new Error("인증에 실패했습니다. 다시 로그인해주세요.");
+        }
+        throw new Error("찜 목록을 불러오는데 실패했습니다.");
+      }
+
+      const data: WishlistResponse = await response.json();
+      setPlaces(data.wishlist || []);
+      setReviews([]);
+    } catch (err) {
+      console.error("찜 목록 조회 에러:", err);
+      setError(
+        err instanceof Error ? err.message : "데이터를 불러오는데 실패했습니다."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 내가 작성한 장소 가져오기
+  const fetchMyPlaces = async () => {
+    const userId = getUserIdFromToken();
+    if (!userId) {
+      setError("로그인이 필요합니다.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const apiUrl = await getApiUrl(`/api/users/${userId}/places`);
+      const response = await fetch(apiUrl, {
+        headers: getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          throw new Error("인증에 실패했습니다. 다시 로그인해주세요.");
+        }
+        throw new Error("장소 목록을 불러오는데 실패했습니다.");
+      }
+
+      const data: PlacesResponse = await response.json();
+      setPlaces(data.places || []);
+      setReviews([]);
+    } catch (err) {
+      console.error("장소 목록 조회 에러:", err);
+      setError(
+        err instanceof Error ? err.message : "데이터를 불러오는데 실패했습니다."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 내가 작성한 리뷰 가져오기
+  const fetchMyReviews = async () => {
+    const userId = getUserIdFromToken();
+    if (!userId) {
+      setError("로그인이 필요합니다.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const apiUrl = await getApiUrl(`/api/users/${userId}/reviews`);
+      const response = await fetch(apiUrl, {
+        headers: getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          throw new Error("인증에 실패했습니다. 다시 로그인해주세요.");
+        }
+        throw new Error("리뷰 목록을 불러오는데 실패했습니다.");
+      }
+
+      const data: ReviewsResponse = await response.json();
+      setPlaces([]);
+      setReviews(data.reviews || []);
+    } catch (err) {
+      console.error("리뷰 목록 조회 에러:", err);
+      setError(
+        err instanceof Error ? err.message : "데이터를 불러오는데 실패했습니다."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     switch (activeMenu) {
       case "wishList":
-        setPlaces(wishListData);
-        setReviews([]);
+        fetchWishlist();
         break;
       case "myPlaces":
-        setPlaces(myPlacesData);
-        setReviews([]);
+        fetchMyPlaces();
         break;
       case "reviews":
-        setPlaces([]);
-        setReviews(reviewsData);
+        fetchMyReviews();
         break;
       default:
-        setPlaces(wishListData);
-        setReviews([]);
+        fetchWishlist();
     }
   }, [activeMenu]);
 
@@ -92,10 +210,48 @@ const MyPage: React.FC = () => {
     setActiveMenu(menu);
   };
 
-  const handleWithdraw = () => {
-    if (window.confirm("정말 회원탈퇴를 하시겠습니까?")) {
-      alert("회원탈퇴가 완료되었습니다.");
-      // 실제로는 서버에 탈퇴 요청을 보내고 로그아웃 처리
+  const handleWithdraw = async () => {
+    const password = prompt("회원 탈퇴를 진행하려면 비밀번호를 입력해주세요:");
+
+    if (!password) {
+      return; // 취소한 경우
+    }
+
+    if (
+      !confirm("정말 회원탈퇴를 하시겠습니까? 이 작업은 되돌릴 수 없습니다.")
+    ) {
+      return;
+    }
+
+    const userId = getUserIdFromToken();
+    if (!userId) {
+      alert("로그인 정보를 찾을 수 없습니다.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const apiUrl = await getApiUrl(`/api/users/${userId}`);
+      const response = await fetch(apiUrl, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert("회원 탈퇴가 완료되었습니다.");
+        clearAuth(); // 인증 정보 삭제
+        navigate("/");
+      } else {
+        alert(data.message || "회원 탈퇴에 실패했습니다.");
+      }
+    } catch (err) {
+      console.error("회원 탈퇴 에러:", err);
+      alert("회원 탈퇴 중 오류가 발생했습니다.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -151,28 +307,42 @@ const MyPage: React.FC = () => {
           <h3>{getMenuTitle()}</h3>
           <hr />
 
-          {places.length > 0 && (
+          {loading && (
+            <p
+              style={{ textAlign: "center", marginTop: "50px", color: "#666" }}
+            >
+              로딩 중...
+            </p>
+          )}
+
+          {error && (
+            <p
+              style={{
+                textAlign: "center",
+                marginTop: "50px",
+                color: "#e74c3c",
+              }}
+            >
+              {error}
+            </p>
+          )}
+
+          {!loading && !error && places.length > 0 && (
             <ul className="results">
               {places.map((place) => (
                 <li key={place.no}>
-                  <a href={`/detail/${place.no}`}>
-                    <img
-                      className="placeImg"
-                      src={`/images/${place.no}_1.jpg`}
-                      onError={(e) => {
-                        e.currentTarget.src = "/images/180x240_placeholder.jpg";
-                      }}
-                      alt={place.title}
-                    />
+                  <a href={`/place/${place.no}`}>
+                    <PlaceImage placeNo={place.no} alt={place.title} />
                     <div>
                       <p>
                         <span className="placeName">{place.title}</span>
-                        {place.distance && (
+                        {place.distance !== undefined && (
                           <span className="distance">{place.distance}m</span>
                         )}
                       </p>
                       <p>
-                        {place.address} {place.detailAddress}
+                        {place.guAddress} {place.afterGuAddress}{" "}
+                        {place.detailAddress}
                       </p>
                       <p className="star">★ {place.star}</p>
                     </div>
@@ -182,7 +352,7 @@ const MyPage: React.FC = () => {
             </ul>
           )}
 
-          {reviews.length > 0 && (
+          {!loading && !error && reviews.length > 0 && (
             <table className="reviews">
               <thead>
                 <tr>
@@ -193,29 +363,36 @@ const MyPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {reviews.map((review, index) => (
-                  <tr key={index}>
+                {reviews.map((review) => (
+                  <tr key={review.no}>
                     <td>
-                      <a href={`/detail/${review.placeNo}`}>
+                      <a href={`/place/${review.placeNo}`}>
                         {review.placeTitle}
                       </a>
                     </td>
                     <td className="review-content">{review.content}</td>
                     <td className="star">★{review.star}</td>
-                    <td>{review.writtenDate}</td>
+                    <td>{new Date(review.writtenDate).toLocaleDateString()}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           )}
 
-          {places.length === 0 && reviews.length === 0 && (
-            <p
-              style={{ textAlign: "center", marginTop: "50px", color: "#666" }}
-            >
-              등록된 항목이 없습니다.
-            </p>
-          )}
+          {!loading &&
+            !error &&
+            places.length === 0 &&
+            reviews.length === 0 && (
+              <p
+                style={{
+                  textAlign: "center",
+                  marginTop: "50px",
+                  color: "#666",
+                }}
+              >
+                등록된 항목이 없습니다.
+              </p>
+            )}
         </section>
       </div>
     </>

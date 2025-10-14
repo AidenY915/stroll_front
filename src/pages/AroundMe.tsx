@@ -5,6 +5,29 @@ import { isLoggedIn } from "../utils/auth";
 import LocationModal from "../components/LocationModal";
 import "./AroundMe.css";
 
+// 비동기 이미지 URL 컴포넌트
+const PlaceImage: React.FC<{ placeNo: number; alt: string }> = ({
+  placeNo,
+  alt,
+}) => {
+  const [imageUrl, setImageUrl] = useState("/images/180x240_placeholder.jpg");
+
+  useEffect(() => {
+    getApiUrl(`/api/image/${placeNo}_1.jpg`).then(setImageUrl);
+  }, [placeNo]);
+
+  return (
+    <img
+      className="placeImg"
+      src={imageUrl}
+      onError={(e) => {
+        e.currentTarget.src = "/images/180x240_placeholder.jpg";
+      }}
+      alt={alt}
+    />
+  );
+};
+
 interface Place {
   placeNo: number;
   name: string;
@@ -84,7 +107,7 @@ const AroundMe: React.FC = () => {
         category: currentCategory,
         maxDistance: currentMaxDistance.toString(), // URL과 동일한 값 사용
         minStar: currentMinStar.toString(),
-        orderBy: orderBy,
+        order: orderBy,
         page: currentPage.toString(),
       });
 
@@ -393,14 +416,7 @@ const AroundMe: React.FC = () => {
               places.map((place) => (
                 <li key={place.placeNo}>
                   <a href={`/place/${place.placeNo}`}>
-                    <img
-                      className="placeImg"
-                      src={`/images/${place.placeNo}_1.jpg`}
-                      onError={(e) => {
-                        e.currentTarget.src = "/images/180x240_placeholder.jpg";
-                      }}
-                      alt={place.name}
-                    />
+                    <PlaceImage placeNo={place.placeNo} alt={place.name} />
                     <div>
                       <p>
                         <span className="placeName">{place.name}</span>

@@ -9,16 +9,10 @@ interface RegisterForm {
   password: string;
   confirmPassword: string;
   nickname: string;
-  email: string;
 }
 
 interface RegisterResponse {
   message: string;
-  user?: {
-    userId: string;
-    nickname: string;
-    email: string;
-  };
 }
 
 const Register: React.FC = () => {
@@ -29,7 +23,6 @@ const Register: React.FC = () => {
     password: "",
     confirmPassword: "",
     nickname: "",
-    email: "",
   });
 
   const [errors, setErrors] = useState<Partial<RegisterForm>>({});
@@ -193,13 +186,6 @@ const Register: React.FC = () => {
       newErrors.nickname = "닉네임은 2-10자 사이여야 합니다.";
     }
 
-    // 이메일 검사
-    if (!formData.email.trim()) {
-      newErrors.email = "이메일을 입력해주세요.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "올바른 이메일 형식을 입력해주세요.";
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -226,7 +212,6 @@ const Register: React.FC = () => {
           userId: formData.userId,
           password: formData.password,
           nickname: formData.nickname,
-          email: formData.email,
         }),
       });
 
@@ -346,7 +331,7 @@ const Register: React.FC = () => {
 
         {/* 닉네임 입력 */}
         <div className="form-group">
-          <label htmlFor="nickname">닉네임</label>
+          <label htmlFor="nickname">닉네임 *</label>
           <input
             type="text"
             id="nickname"
@@ -360,22 +345,6 @@ const Register: React.FC = () => {
           {errors.nickname && (
             <div className="error-message">{errors.nickname}</div>
           )}
-        </div>
-
-        {/* 이메일 입력 */}
-        <div className="form-group">
-          <label htmlFor="email">이메일</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            className={errors.email ? "error" : ""}
-            placeholder="example@email.com"
-            disabled={loading}
-          />
-          {errors.email && <div className="error-message">{errors.email}</div>}
         </div>
 
         <button type="submit" className="register-button" disabled={loading}>

@@ -18,7 +18,8 @@ interface PlaceDetail {
 }
 
 interface Review {
-  userId: number;
+  no: number;
+  userId: string;
   userNickname: string;
   content: string;
   star: number;
@@ -88,7 +89,7 @@ const Place: React.FC = () => {
           setSelectedImage(data.imgs[0]);
         } else {
           // 기본 장소 이미지 시도
-          setSelectedImage(`/images/${data.placeNo}_1.jpg`);
+          setSelectedImage(await getApiUrl(`/api/image/${data.placeNo}_1.jpg`));
         }
 
         // 리뷰 데이터가 있다면 설정
@@ -112,18 +113,48 @@ const Place: React.FC = () => {
 
   // 찜하기 토글
   const handleWishToggle = async () => {
-    try {
-      const apiUrl = await getApiUrl(`/api/wish/${placeNo}`);
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: getAuthHeaders(),
-      });
+    const userId = getUserIdFromToken();
+    if (!userId) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
 
-      if (response.ok) {
-        setIsWished(!isWished);
+    try {
+      if (isWished) {
+        // 찜 해제
+        const apiUrl = await getApiUrl(
+          `/api/users/${userId}/wishlist/${placeNo}`
+        );
+        const response = await fetch(apiUrl, {
+          method: "DELETE",
+          headers: getAuthHeaders(),
+        });
+
+        if (response.ok) {
+          setIsWished(false);
+        } else {
+          const data = await response.json();
+          alert(data.message || "찜 해제에 실패했습니다.");
+        }
+      } else {
+        // 찜 추가
+        const apiUrl = await getApiUrl(`/api/users/${userId}/wishlist`);
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ placeNo: Number(placeNo) }),
+        });
+
+        if (response.ok) {
+          setIsWished(true);
+        } else {
+          const data = await response.json();
+          alert(data.message || "찜하기에 실패했습니다.");
+        }
       }
     } catch (error) {
       console.error("찜하기 에러:", error);
+      alert("찜하기 처리 중 오류가 발생했습니다.");
     }
   };
 
@@ -137,14 +168,13 @@ const Place: React.FC = () => {
     }
 
     try {
-      const apiUrl = await getApiUrl("/api/review");
+      const apiUrl = await getApiUrl(`/api/place/${placeNo}/reviews`);
       const response = await fetch(apiUrl, {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({
-          placeNo: Number(placeNo),
-          star: newReview.star,
           content: newReview.content,
+          star: newReview.star,
         }),
       });
 
@@ -154,7 +184,8 @@ const Place: React.FC = () => {
         fetchReviews(Number(placeNo));
         alert("리뷰가 등록되었습니다.");
       } else {
-        alert("리뷰 등록에 실패했습니다.");
+        const data = await response.json();
+        alert(data.message || "리뷰 등록에 실패했습니다.");
       }
     } catch (error) {
       console.error("리뷰 등록 에러:", error);
@@ -163,14 +194,14 @@ const Place: React.FC = () => {
   };
 
   // 리뷰 삭제
-  const handleReviewDelete = async (reviewUserId: number) => {
+  const handleReviewDelete = async (reviewNo: number) => {
     if (!confirm("리뷰를 삭제하시겠습니까?")) {
       return;
     }
 
     try {
       const apiUrl = await getApiUrl(
-        `/api/place/${placeNo}/review/${reviewUserId}`
+        `/api/place/${placeNo}/reviews/${reviewNo}`
       );
       const response = await fetch(apiUrl, {
         method: "DELETE",
@@ -181,7 +212,8 @@ const Place: React.FC = () => {
         fetchReviews(Number(placeNo));
         alert("리뷰가 삭제되었습니다.");
       } else {
-        alert("리뷰 삭제에 실패했습니다.");
+        const data = await response.json();
+        alert(data.message || "리뷰 삭제에 실패했습니다.");
       }
     } catch (error) {
       console.error("리뷰 삭제 에러:", error);
@@ -328,18 +360,18 @@ const Place: React.FC = () => {
         )}
 
         <ul className="reviews">
-          {reviews.map((reply, index) => (
-            <li key={`${reply.userId}-${index}`} className="review">
+          {reviews.map((reply) => (
+            <li key={reply.no} className="review">
               <p className="writer">{reply.userNickname}</p>
               <p className="score">{"★".repeat(Math.floor(reply.star))}</p>
               <p className="content">{reply.content}</p>
               <p className="createdDate">
                 {new Date(reply.createdAt).toLocaleDateString()}
               </p>
-              {reply.userId.toString() === currentUserId && (
+              {reply.userId === currentUserId && (
                 <button
                   className="replyBtn"
-                  onClick={() => handleReviewDelete(reply.userId)}
+                  onClick={() => handleReviewDelete(reply.no)}
                 >
                   삭제
                 </button>
