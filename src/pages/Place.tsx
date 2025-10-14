@@ -268,6 +268,10 @@ const Place: React.FC = () => {
   const { imgs } = placeData;
   const currentUserId = getUserIdFromToken();
 
+  // 디버깅용
+  console.log("currentUserId:", currentUserId);
+  console.log("place.userId:", place.userId);
+
   return (
     <div className="place-container">
       <section className="about">
@@ -317,7 +321,7 @@ const Place: React.FC = () => {
               </button>
             )}
           </h2>
-          <p>★ {place.star}</p>
+          <p>★ {place.star.toFixed(2)}</p>
           <p>
             <span>{place.address}</span>
           </p>

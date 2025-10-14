@@ -11,7 +11,7 @@ interface LoginForm {
 }
 
 interface LoginResponse {
-  token: string;
+  accessToken: string;
   message?: string;
 }
 
@@ -106,8 +106,8 @@ const Login: React.FC = () => {
       const data: LoginResponse = await response.json();
 
       if (response.ok) {
-        // token 저장
-        setToken(data.token);
+        // accessToken 저장
+        setToken(data.accessToken);
 
         setMessage({ type: "success", text: "로그인 성공!" });
 

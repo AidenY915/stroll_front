@@ -36,13 +36,26 @@ export const isTokenValid = (): boolean => {
   if (!token) return false;
 
   try {
-    // JWT 토큰의 경우 payload 부분을 디코딩하여 만료시간 확인
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    const currentTime = Date.now() / 1000;
+    // JWT 형식 확인
+    const parts = token.split(".");
+    if (parts.length !== 3) {
+      // JWT가 아닌 경우 토큰이 존재하면 유효한 것으로 간주
+      return true;
+    }
 
-    return payload.exp > currentTime;
+    // JWT 토큰의 경우 payload 부분을 디코딩하여 만료시간 확인
+    const payload = JSON.parse(atob(parts[1]));
+
+    // exp 필드가 있으면 만료 시간 확인
+    if (payload.exp) {
+      const currentTime = Date.now() / 1000;
+      return payload.exp > currentTime;
+    }
+
+    // exp 필드가 없으면 유효한 것으로 간주
+    return true;
   } catch (error) {
-    // JWT가 아닌 경우 또는 파싱 에러 시 토큰이 존재하면 유효한 것으로 간주
+    // 파싱 에러 시 토큰이 존재하면 유효한 것으로 간주
     return true;
   }
 };
@@ -73,13 +86,26 @@ export const getUserIdFromToken = (): string | null => {
   const token = getToken();
   if (!token) return null;
 
+  console.log("저장된 토큰:", token); // 디버깅용
+
   try {
+    // JWT 형식 확인 (3개 파트로 구성: header.payload.signature)
+    const parts = token.split(".");
+    if (parts.length !== 3) {
+      console.error("JWT 형식이 아닙니다. 토큰을 그대로 userId로 사용합니다.");
+      // JWT가 아닌 경우 토큰 자체를 userId로 사용 (단순 문자열 토큰)
+      return token;
+    }
+
     // JWT 토큰의 payload 부분을 디코딩
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    return payload.sub || null;
+    const payload = JSON.parse(atob(parts[1]));
+    console.log("JWT payload:", payload); // 디버깅용
+    // sub, userId, id 등 여러 필드명 시도
+    return payload.sub || payload.userId || payload.id || null;
   } catch (error) {
     console.error("토큰 파싱 에러:", error);
-    return null;
+    // 파싱 실패 시 토큰 자체를 userId로 사용
+    return token;
   }
 };
 
