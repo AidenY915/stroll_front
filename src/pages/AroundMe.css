@@ -105,11 +105,20 @@
   text-overflow: ellipsis;
 }
 
-.results > li > a > img {
+/* 장소 이미지 스타일 - 높은 우선순위로 설정 */
+.results > li > a > .placeImg {
   margin-right: 20px;
   height: 240px;
   width: 180px;
   object-fit: cover;
+}
+
+/* 추가 보장을 위한 중요도 설정 */
+.placeImg {
+  margin-right: 20px !important;
+  height: 240px !important;
+  width: 180px !important;
+  object-fit: cover !important;
 }
 
 ul.results > li > a > div {

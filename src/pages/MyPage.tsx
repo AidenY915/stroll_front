@@ -344,7 +344,7 @@ const MyPage: React.FC = () => {
                         {place.guAddress} {place.afterGuAddress}{" "}
                         {place.detailAddress}
                       </p>
-                      <p className="star">★ {place.star}</p>
+                      <p className="star">★ {place.star.toFixed(2)}</p>
                     </div>
                   </a>
                 </li>
@@ -371,7 +371,7 @@ const MyPage: React.FC = () => {
                       </a>
                     </td>
                     <td className="review-content">{review.content}</td>
-                    <td className="star">★{review.star}</td>
+                    <td className="star">★ {review.star.toFixed(2)}</td>
                     <td>{new Date(review.writtenDate).toLocaleDateString()}</td>
                   </tr>
                 ))}

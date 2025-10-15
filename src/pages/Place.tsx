@@ -4,6 +4,35 @@ import { getApiUrl } from "../utils/config";
 import { getAuthHeaders, getUserIdFromToken } from "../utils/auth";
 import "./Place.css";
 
+// 썸네일 이미지 컴포넌트
+const ThumbnailImage: React.FC<{
+  imageName: string;
+  placeName: string;
+  index: number;
+  isActive?: boolean;
+  onClick: () => void;
+}> = ({ imageName, placeName, index, isActive, onClick }) => {
+  const [thumbnailUrl, setThumbnailUrl] = useState(
+    "/images/180x240_placeholder.jpg"
+  );
+
+  useEffect(() => {
+    getApiUrl(`/api/image/${imageName}`).then(setThumbnailUrl);
+  }, [imageName]);
+
+  return (
+    <img
+      className={`thumbnail ${isActive ? "active" : ""}`}
+      src={thumbnailUrl}
+      alt={`${placeName} 이미지 ${index + 1}`}
+      onClick={onClick}
+      onError={(e) => {
+        e.currentTarget.src = "/images/180x240_placeholder.jpg";
+      }}
+    />
+  );
+};
+
 // 인터페이스 정의
 interface PlaceDetail {
   placeNo: number;
@@ -14,7 +43,8 @@ interface PlaceDetail {
   userId: string;
   distance: number;
   star: number;
-  wished: boolean;
+  isWished: boolean;
+  imgs: string[];
 }
 
 interface Review {
@@ -27,7 +57,6 @@ interface Review {
 }
 
 interface PlaceDetailResponse extends PlaceDetail {
-  imgs?: string[];
   replies?: Review[];
   currentUserId?: string;
 }
@@ -82,11 +111,13 @@ const Place: React.FC = () => {
         const data: PlaceDetailResponse = await response.json();
         console.log("Place data:", data);
         setPlaceData(data);
-        setIsWished(data.wished);
+        setIsWished(data.isWished);
 
-        // 기본 이미지 설정
+        // 기본 이미지 설정 - imgs 배열에서 첫 번째 이미지 사용
         if (data.imgs && data.imgs.length > 0) {
-          setSelectedImage(data.imgs[0]);
+          // 이미지 이름을 API URL로 변환
+          const firstImageUrl = await getApiUrl(`/api/image/${data.imgs[0]}`);
+          setSelectedImage(firstImageUrl);
         } else {
           // 기본 장소 이미지 시도
           setSelectedImage(await getApiUrl(`/api/image/${data.placeNo}_1.jpg`));
@@ -268,9 +299,16 @@ const Place: React.FC = () => {
   const { imgs } = placeData;
   const currentUserId = getUserIdFromToken();
 
+  // 썸네일 클릭 핸들러
+  const handleThumbnailClick = async (imageName: string) => {
+    const imageUrl = await getApiUrl(`/api/image/${imageName}`);
+    setSelectedImage(imageUrl);
+  };
+
   // 디버깅용
   console.log("currentUserId:", currentUserId);
   console.log("place.userId:", place.userId);
+  console.log("place.imgs:", imgs);
 
   return (
     <div className="place-container">
@@ -289,18 +327,14 @@ const Place: React.FC = () => {
 
           {imgs && imgs.length > 1 && (
             <div className="thumbnails">
-              {imgs.map((img, index) => (
-                <img
+              {imgs.map((imageName, index) => (
+                <ThumbnailImage
                   key={index}
-                  className={`thumbnail ${
-                    selectedImage === img ? "active" : ""
-                  }`}
-                  src={img}
-                  alt={`${place.name} 이미지 ${index + 1}`}
-                  onClick={() => setSelectedImage(img)}
-                  onError={(e) => {
-                    e.currentTarget.src = "/images/180x240_placeholder.jpg";
-                  }}
+                  imageName={imageName}
+                  placeName={place.name}
+                  index={index}
+                  isActive={selectedImage?.includes(imageName)}
+                  onClick={() => handleThumbnailClick(imageName)}
                 />
               ))}
             </div>
@@ -367,7 +401,7 @@ const Place: React.FC = () => {
           {reviews.map((reply) => (
             <li key={reply.no} className="review">
               <p className="writer">{reply.userNickname}</p>
-              <p className="score">{"★".repeat(Math.floor(reply.star))}</p>
+              <p className="score">★ {reply.star.toFixed(2)}</p>
               <p className="content">{reply.content}</p>
               <p className="createdDate">
                 {new Date(reply.createdAt).toLocaleDateString()}

@@ -424,7 +424,7 @@ const AroundMe: React.FC = () => {
                           <span className="distance">{place.distance}m</span>
                         )}
                       </p>
-                      <p className="star">★ {place.star}</p>
+                      <p className="star">★ {place.star.toFixed(2)}</p>
                     </div>
                   </a>
                 </li>
