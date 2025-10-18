@@ -131,6 +131,13 @@ ul.results > li > a > div {
   font-weight: 700;
 }
 
+.placeAddress {
+  font-size: 15px;
+  color: #888;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
 .resultContents .orderByUl {
   list-style: none;
   overflow: hidden;

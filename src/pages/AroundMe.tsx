@@ -33,6 +33,7 @@ interface Place {
   name: string;
   star: number;
   distance: number;
+  address?: string;
 }
 
 interface ApiResponse {
@@ -424,6 +425,9 @@ const AroundMe: React.FC = () => {
                           <span className="distance">{place.distance}m</span>
                         )}
                       </p>
+                      {place.address && (
+                        <p className="placeAddress">{place.address}</p>
+                      )}
                       <p className="star">★ {place.star.toFixed(2)}</p>
                     </div>
                   </a>
