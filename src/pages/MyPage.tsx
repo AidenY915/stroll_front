@@ -60,7 +60,13 @@ interface WishlistResponse {
 }
 
 interface PlacesResponse {
-  places: Place[];
+  places: {
+    placeNo: number;
+    name: string;
+    star: number;
+    distance: number;
+    address: string;
+  }[];
 }
 
 interface ReviewsResponse {
@@ -142,7 +148,19 @@ const MyPage: React.FC = () => {
       }
 
       const data: PlacesResponse = await response.json();
-      setPlaces(data.places || []);
+      // API 응답을 Place 형식으로 변환
+      const transformedPlaces: Place[] = (data.places || []).map((p) => ({
+        no: p.placeNo,
+        title: p.name,
+        category: "", // API에서 제공하지 않음
+        guAddress: p.address.split(" ").slice(0, 2).join(" "), // 주소에서 구 주소 추출
+        afterGuAddress: p.address.split(" ").slice(2).join(" "), // 나머지 주소
+        detailAddress: "",
+        star: p.star,
+        distance: p.distance,
+        wished: false,
+      }));
+      setPlaces(transformedPlaces);
       setReviews([]);
     } catch (err) {
       console.error("장소 목록 조회 에러:", err);
